@@ -6,6 +6,7 @@ import scala.swing.BorderPanel
 import scala.swing.BoxPanel
 import BorderPanel.Position._
 import ScrollPane._
+import event._
 
 import java.awt.Color
 
@@ -56,11 +57,16 @@ object EthicalCoherence extends SimpleSwingApplication {
     var evaluateButton = new Button {
       text = "Evaluate"
     }
+    
+    var statusLabel = new Label(); 
+    statusLabel.size.setSize(350,100)
    
+    
     var controlPanel = new FlowPanel() {
       contents+=loadButton
       contents+=computeButton
       contents+=evaluateButton
+      contents+=statusLabel
     }
     
     var text = "Test String"
@@ -149,7 +155,39 @@ object EthicalCoherence extends SimpleSwingApplication {
       }
     }
     
- 
+    listenTo(loadButton)
+    listenTo(computeButton)
+    
+    reactions += {
+      case ButtonClicked(component) if component == loadButton =>
+           var v3 = new String("Test"+g.getVertexCount()+1)
+           g.addVertex(v3)
+           g.addEdge(g.getEdgeCount(),v2,v3)
+           
+           
+           var relaxer : Relaxer = vv.getModel().getRelaxer();
+           var vertexPaint = new Transformer[String,Paint]() {
+                  def transform (i:String) : Paint = {
+                    new Color(new java.lang.Float(0),new java.lang.Float(0),new java.lang.Float(1))         
+                  }
+              };
+   
+            var vertexSize =  new Transformer[String,Shape](){
+                  def  transform(i: String) : Shape = {
+                      var circle = new Ellipse2D.Double(-15, -15, 50, 50);
+                      // in this case, the vertex is twice as large
+                       return AffineTransform.getScaleInstance(1,1).createTransformedShape(circle);
+                  }
+              };
+            vv.getRenderContext().setVertexFillPaintTransformer(vertexPaint);
+            vv.getRenderContext().setVertexShapeTransformer(vertexSize);
+           layout.initialize();
+           relaxer.resume();
+           
+           
+      case ButtonClicked(component) if component == computeButton =>
+        statusLabel.text="Compute Button is Pressed"
+    }
     
 }
     
