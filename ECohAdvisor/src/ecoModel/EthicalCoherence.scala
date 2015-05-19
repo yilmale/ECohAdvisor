@@ -46,27 +46,23 @@ object EthicalCoherence extends SimpleSwingApplication {
   def top =new MainFrame {
     title = "Ethical Coherence Advisor Tool"
    
-    var loadButton = new Button {
-      text = "Load"
+    var translateButton = new Button {
+      text = "Translate Model"
     }
     
     var computeButton = new Button {
       text = "Compute Active Nodes"
     }
      
-    var evaluateButton = new Button {
-      text = "Evaluate"
+    var simulateButton = new Button {
+      text = "Simulate Activation Process"
     }
     
-    var statusLabel = new Label(); 
-    statusLabel.size.setSize(350,100)
-   
     
     var controlPanel = new FlowPanel() {
-      contents+=loadButton
+      contents+=translateButton
       contents+=computeButton
-      contents+=evaluateButton
-      contents+=statusLabel
+      contents+=simulateButton
     }
     
     var text = "Test String"
@@ -97,6 +93,7 @@ object EthicalCoherence extends SimpleSwingApplication {
     
     var v1 = new String("Test")
     var v2 = new String("Test2")
+
     g.addVertex(v1)    
     g.addVertex(v2)
     g.addEdge(g.getEdgeCount(),v1,v2)
@@ -149,18 +146,33 @@ object EthicalCoherence extends SimpleSwingApplication {
 
     menuBar = new MenuBar {
       contents += new Menu("File") {
+        contents += new MenuItem(Action("Load") {
+           val sf = new Frame {secondFrame => 
+             title = "Load File"
+             visible = true
+             contents = new FlowPanel {
+                contents += new Button(Action("Close Me") {secondFrame.dispose()})
+                contents += new Button(Action("Exit")     {quit()})
+      }
+           }
+           
+        });
         contents += new MenuItem(Action("Exit") {
           sys.exit(0)
         })
       }
     }
     
-    listenTo(loadButton)
+    listenTo(translateButton)
     listenTo(computeButton)
     
     reactions += {
-      case ButtonClicked(component) if component == loadButton =>
-           var v3 = new String("Test"+g.getVertexCount()+1)
+      case ButtonClicked(component) if component == translateButton =>
+           
+           
+           
+      case ButtonClicked(component) if component == computeButton =>
+        var v3 = new String("Test"+g.getVertexCount()+1)
            g.addVertex(v3)
            g.addEdge(g.getEdgeCount(),v2,v3)
            
@@ -183,10 +195,6 @@ object EthicalCoherence extends SimpleSwingApplication {
             vv.getRenderContext().setVertexShapeTransformer(vertexSize);
            layout.initialize();
            relaxer.resume();
-           
-           
-      case ButtonClicked(component) if component == computeButton =>
-        statusLabel.text="Compute Button is Pressed"
     }
     
 }
