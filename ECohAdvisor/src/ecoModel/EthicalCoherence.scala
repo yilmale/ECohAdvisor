@@ -8,6 +8,9 @@ import BorderPanel.Position._
 import ScrollPane._
 import event._
 
+import scala.io.Source
+import java.io._
+
 import java.awt.Color
 
 import java.awt.Paint
@@ -50,6 +53,10 @@ object EthicalCoherence extends SimpleSwingApplication {
       text = "Translate Model"
     }
     
+    var generateButton = new Button {
+      text = "Generate Network"
+    }
+    
     var computeButton = new Button {
       text = "Compute Active Nodes"
     }
@@ -61,6 +68,7 @@ object EthicalCoherence extends SimpleSwingApplication {
     
     var controlPanel = new FlowPanel() {
       contents+=translateButton
+      contents+=generateButton
       contents+=computeButton
       contents+=simulateButton
     }
@@ -143,17 +151,40 @@ object EthicalCoherence extends SimpleSwingApplication {
       
     }
     
-
+    var modelFileName : String = null
     menuBar = new MenuBar {
       contents += new Menu("File") {
         contents += new MenuItem(Action("Load") {
            val sf = new Frame {secondFrame => 
              title = "Load File"
+             preferredSize = new Dimension(300,300)
              visible = true
+             val textfield:TextField = new TextField {text=""; columns =15}
+             val label:Label = new Label("")
              contents = new FlowPanel {
-                contents += new Button(Action("Close Me") {secondFrame.dispose()})
-                contents += new Button(Action("Exit")     {quit()})
-      }
+                contents += new Label(" Enter Model Filename")
+                contents += textfield
+                contents += new Button(Action("Select") {
+                     label.text_=("Selected filename: "+textfield.text) 
+                     //val writer = new PrintWriter(new File("ecoDSLTest1.emdl" ))
+                     //writer.write("Hello Scala")
+                    // writer.close()
+                     modelFileName ="ECoModel.xml" 
+                     Source.fromFile(modelFileName).foreach { x => textArea2.text+=x }
+                     secondFrame.dispose()})
+                contents += label
+                
+                //contents += new Button(Action("Select Model File")     {quit()})
+             }
+             
+             listenTo(textfield.keys)
+             
+             reactions += {
+                case KeyPressed(_, Key.Enter, _, _) => 
+                     label.text_=("Selected filename: "+textfield.text)
+                     modelFileName = new String(textfield.text)
+              }
+             
            }
            
         });
