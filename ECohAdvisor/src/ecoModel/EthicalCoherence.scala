@@ -49,12 +49,14 @@ object EthicalCoherence extends SimpleSwingApplication {
   def top =new MainFrame {
     title = "Ethical Coherence Advisor Tool"
    
-    var translateButton = new Button {
-      text = "Translate Model"
+    
+    
+    var compileButton = new Button {
+      text = "Compile"
     }
     
-    var generateButton = new Button {
-      text = "Generate Network"
+    var displayButton = new Button {
+      text = "Display Network"
     }
     
     var computeButton = new Button {
@@ -62,22 +64,27 @@ object EthicalCoherence extends SimpleSwingApplication {
     }
      
     var simulateButton = new Button {
-      text = "Simulate Activation Process"
+      text = "Simulate Process"
+    }
+    
+    var exportButton = new Button {
+      text = "Export Model"
     }
     
     
-    var controlPanel = new FlowPanel() {
-      contents+=translateButton
-      contents+=generateButton
+    var controlPanel = new FlowPanel() { 
+      contents+=compileButton
+      contents+=displayButton
       contents+=computeButton
       contents+=simulateButton
+      contents+=exportButton
     }
     
-    var text = "Test String"
+    var text = ""
     var textArea1 = new TextArea(text, 10, 80);
     textArea1.preferredSize_=(new Dimension(100,100))
     textArea1.lineWrap_=(true)
-    var textArea2 = new TextArea(text, 35, 25);
+    var textArea2 = new TextArea(text, 100, 25);
     textArea2.lineWrap_=(true)
     textArea2.preferredSize_=(new Dimension(100, 100));
      
@@ -99,12 +106,7 @@ object EthicalCoherence extends SimpleSwingApplication {
       contents+=scrollPaneR
     }
     
-    var v1 = new String("Test")
-    var v2 = new String("Test2")
-
-    g.addVertex(v1)    
-    g.addVertex(v2)
-    g.addEdge(g.getEdgeCount(),v1,v2)
+    
     
     layout = new FRLayout2[String,Number](g);
     vv = new VisualizationViewer[String,Number](layout, new Dimension(600,600));
@@ -138,10 +140,12 @@ object EthicalCoherence extends SimpleSwingApplication {
        contents+= vvWrap
    
      }
-     visPanel.size.setSize(new Dimension(500,500))
+    visPanel.preferredSize=new Dimension(670,600)
+    
+     //visPanel.size.setSize(new Dimension(500,500))
     
     
-     size = new Dimension(1000,1000)
+     preferredSize= new Dimension(1000,1000)
     
     contents = new BorderPanel() {
       layout(controlPanel)=North
@@ -168,9 +172,15 @@ object EthicalCoherence extends SimpleSwingApplication {
                      label.text_=("Selected filename: "+textfield.text) 
                      //val writer = new PrintWriter(new File("ecoDSLTest1.emdl" ))
                      //writer.write("Hello Scala")
-                    // writer.close()
-                     modelFileName ="ECoModel.xml" 
-                     Source.fromFile(modelFileName).foreach { x => textArea2.text+=x }
+                     //writer.close()
+                     modelFileName =textfield.text
+                     try {
+                       Source.fromFile(modelFileName).foreach { x => textArea2.text+=x }
+                     } catch {
+                       case ex: FileNotFoundException  => {
+                         println("Missing file exception")
+                       }
+                     }
                      secondFrame.dispose()})
                 contents += label
                 
@@ -188,44 +198,97 @@ object EthicalCoherence extends SimpleSwingApplication {
            }
            
         });
+        contents += new MenuItem(Action("Save") {
+          if (modelFileName != null) {
+            val fw = new FileWriter(modelFileName) ; fw.write(textArea2.text) ; fw.close() 
+          }
+        });
         contents += new MenuItem(Action("Exit") {
           sys.exit(0)
         })
       }
     }
     
-    listenTo(translateButton)
+    listenTo(exportButton)
     listenTo(computeButton)
+    listenTo(compileButton)
+    listenTo(displayButton)
     
     reactions += {
-      case ButtonClicked(component) if component == translateButton =>
+      case ButtonClicked(component) if component == exportButton =>
            
+      
+      case ButtonClicked(component) if component == compileButton =>
+        
+        
            
-           
-      case ButtonClicked(component) if component == computeButton =>
+      case ButtonClicked(component) if component == displayButton =>
+        
+        var v1 = new String("Test1")
+        var v2 = new String("Test2")
+
+        g.addVertex(v1)    
+        g.addVertex(v2)
+        g.addEdge(g.getEdgeCount(),v1,v2)
         var v3 = new String("Test"+g.getVertexCount()+1)
-           g.addVertex(v3)
-           g.addEdge(g.getEdgeCount(),v2,v3)
+        g.addVertex(v3)
+        g.addEdge(g.getEdgeCount(),v2,v3)
            
            
-           var relaxer : Relaxer = vv.getModel().getRelaxer();
-           var vertexPaint = new Transformer[String,Paint]() {
+        var relaxer : Relaxer = vv.getModel().getRelaxer();
+        var vertexPaint = new Transformer[String,Paint]() {
                   def transform (i:String) : Paint = {
                     new Color(new java.lang.Float(0),new java.lang.Float(0),new java.lang.Float(1))         
                   }
               };
    
-            var vertexSize =  new Transformer[String,Shape](){
+         var vertexSize =  new Transformer[String,Shape](){
                   def  transform(i: String) : Shape = {
                       var circle = new Ellipse2D.Double(-15, -15, 50, 50);
                       // in this case, the vertex is twice as large
                        return AffineTransform.getScaleInstance(1,1).createTransformedShape(circle);
                   }
               };
-            vv.getRenderContext().setVertexFillPaintTransformer(vertexPaint);
-            vv.getRenderContext().setVertexShapeTransformer(vertexSize);
-           layout.initialize();
-           relaxer.resume();
+         vv.getRenderContext().setVertexFillPaintTransformer(vertexPaint);
+         vv.getRenderContext().setVertexShapeTransformer(vertexSize);
+         layout.initialize();
+         relaxer.resume();
+         
+         
+       case ButtonClicked(component) if component == computeButton =>
+        var v1 = new String("Test1")
+        var v2 = new String("Test2")
+
+        g.addVertex(v1)    
+        g.addVertex(v2)
+        g.addEdge(g.getEdgeCount(),v1,v2)
+        var v3 = new String("Test"+g.getVertexCount()+1)
+        g.addVertex(v3)
+        g.addEdge(g.getEdgeCount(),v2,v3)
+           
+           
+        var relaxer : Relaxer = vv.getModel().getRelaxer();
+        var vertexPaint = new Transformer[String,Paint]() {
+                  def transform (i:String) : Paint = {
+                    new Color(new java.lang.Float(1),new java.lang.Float(0),new java.lang.Float(0))         
+                  }
+              };
+   
+         var vertexSize =  new Transformer[String,Shape](){
+                  def  transform(i: String) : Shape = {
+                      var circle = new Ellipse2D.Double(-15, -15, 50, 50);
+                      // in this case, the vertex is twice as large
+                       return AffineTransform.getScaleInstance(1,1).createTransformedShape(circle);
+                  }
+              };
+         vv.getRenderContext().setVertexFillPaintTransformer(vertexPaint);
+         vv.getRenderContext().setVertexShapeTransformer(vertexSize);
+         layout.initialize();
+         relaxer.resume();
+       
+       
+       case ButtonClicked(component) if component == simulateButton =>
+       
     }
     
 }
