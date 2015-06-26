@@ -27,6 +27,7 @@ import org.apache.commons.collections15.Transformer;
 import edu.uci.ics.jung.algorithms.layout.AbstractLayout
 import edu.uci.ics.jung.algorithms.layout.FRLayout2
 import edu.uci.ics.jung.algorithms.layout.util.Relaxer
+import edu.uci.ics.jung.graph.UndirectedSparseMultigraph
 import edu.uci.ics.jung.graph.DirectedSparseMultigraph;
 import edu.uci.ics.jung.graph.Graph
 import edu.uci.ics.jung.graph.ObservableGraph
@@ -36,12 +37,27 @@ import edu.uci.ics.jung.visualization.control.DefaultModalGraphMouse
 import edu.uci.ics.jung.visualization.decorators.ToStringLabeller
 import edu.uci.ics.jung.visualization.renderers.Renderer
 
+import javax.xml.parsers.DocumentBuilder
+import javax.xml.parsers.DocumentBuilderFactory
+
+import org.w3c.dom.Document
+import org.w3c.dom.Element
+import org.w3c.dom.Node
+import org.w3c.dom.NodeList
+import org.xml.sax.InputSource;
+
+import java.io.File;
+import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.LinkedList;
+
 
 
 object EthicalCoherence extends SimpleSwingApplication {
   var g: Graph[String,Number] = null;
   var og: ObservableGraph[String,Number] =null;
-  var ig = Graphs.synchronizedDirectedGraph[String,Number](new DirectedSparseMultigraph[String,Number]())
+  var ig = Graphs.synchronizedUndirectedGraph[String,Number](new UndirectedSparseMultigraph[String,Number]())
   og = new ObservableGraph[String,Number](ig)   
   g = og; 
   var vv : VisualizationViewer[String,Number] = null
@@ -220,8 +236,55 @@ object EthicalCoherence extends SimpleSwingApplication {
       
       case ButtonClicked(component) if component == compileButton =>
         
+        var dbFactory = DocumentBuilderFactory.newInstance()
+        var dBuilder = dbFactory.newDocumentBuilder()
+        var is = new InputSource(new StringReader(textArea2.text)) 
+        var doc = dBuilder.parse(is)
+      
+        doc.getDocumentElement().normalize()
+       
+        System.out.println("Root element :" + doc.getDocumentElement().getNodeName())
+     
+        var goalList = doc.getElementsByTagName("goal")
+        var myStr : String = null
+        for (a <- 0 to goalList.getLength()-1) {
+          var nNode = goalList.item(a)
+          var eElement = nNode.asInstanceOf[Element]
+          myStr = eElement.getElementsByTagName("name").item(0).getTextContent()
+          g.addVertex(myStr)
+          System.out.println(myStr)
+        }
         
-           
+        var evidenceList = doc.getElementsByTagName("evidence")
+       
+        for (a <- 0 to evidenceList.getLength()-1) {
+          var nNode = evidenceList.item(a)
+          var eElement = nNode.asInstanceOf[Element]
+          myStr = eElement.getElementsByTagName("name").item(0).getTextContent()
+          g.addVertex(myStr)
+          System.out.println(myStr)
+        } 
+        
+        var beliefList = doc.getElementsByTagName("belief")
+       
+        for (a <- 0 to beliefList.getLength()-1) {
+          var nNode = beliefList.item(a)
+          var eElement = nNode.asInstanceOf[Element]
+          myStr = eElement.getElementsByTagName("name").item(0).getTextContent()
+          g.addVertex(myStr)
+          System.out.println(myStr)
+        }   
+        
+         var actionList = doc.getElementsByTagName("action")
+       
+        for (a <- 0 to actionList.getLength()-1) {
+          var nNode = actionList.item(a)
+          var eElement = nNode.asInstanceOf[Element]
+          myStr = eElement.getElementsByTagName("name").item(0).getTextContent()
+          g.addVertex(myStr)
+          System.out.println(myStr)
+        } 
+        
       case ButtonClicked(component) if component == displayButton =>
         
         var v1 = new String("Test1")
@@ -292,7 +355,9 @@ object EthicalCoherence extends SimpleSwingApplication {
     }
     
 }
-    
+    def xmlModelParse() {
+      
+    }
 
 }
 

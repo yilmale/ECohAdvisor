@@ -1,0 +1,33 @@
+CoEth Model myModel
+
+agent testAgent {
+	myStr : String
+	action A1 {
+		definition "This is A1"
+		behavior = {}
+	}
+	ecoModel {
+		(goal G1 "This is G1")
+		(goal G2 "This is G2")
+		(belief B1 "This is B1")
+		(belief B2 "This is B2")
+		(belief B3 "This is B3")
+		(evidence E1 "This is E1")
+		(evidence E2 "This is E2")
+		(action A is A1 "This is A1")
+
+		constraints {	
+			explain B1 E1
+			explain B1 E2
+			deduce B1 B2
+			explain B3 E2
+			trigger B1 G1
+			trigger B2 G2
+			facilitate G1 G2
+			facilitate A G1
+			facilitate A G2
+		}
+		
+}
+
+end

@@ -1,0 +1,87 @@
+<?xml version="1.0"?>
+ <ECoModel> 
+<Agent>
+  <name> testAgent </name>
+  <CoherenceModel>
+  <goal>
+     <name>G1</name>
+     <definition>This is G1</definition>
+  </goal>
+  <goal>
+     <name>G2</name>
+     <definition>This is G2</definition>
+  </goal>
+  <belief>
+      <name>B1</name>
+      <definition>This is B1</definition>
+   </belief>
+  <belief>
+      <name>B2</name>
+      <definition>This is B2</definition>
+   </belief>
+  <belief>
+      <name>B3</name>
+      <definition>This is B3</definition>
+   </belief>
+  <evidence>
+      <name>E1</name>
+      <definition>This is E1</definition>
+  </evidence>
+  <evidence>
+      <name>E2</name>
+      <definition>This is E2</definition>
+  </evidence>
+  <action>
+     <name>A</name>
+     <definition>This is A1</definition>
+  </action>
+  <constraints>		  
+  <explain>
+       <source>B1</source>
+       <target>E1</target>
+       <weight>1.0</weight>
+  </explain>
+  <explain>
+       <source>B1</source>
+       <target>E2</target>
+       <weight>1.0</weight>
+  </explain>
+  <deduce>
+       <source>B1</source>
+       <target>B2</target>
+       <weight>1.0</weight>
+  </deduce>
+  <explain>
+       <source>B3</source>
+       <target>E2</target>
+       <weight>1.0</weight>
+  </explain>
+  <trigger>
+       <source>B1</source>
+       <target>G1</target>
+       <weight>1.0</weight>
+  </trigger>
+  <trigger>
+       <source>B2</source>
+       <target>G2</target>
+       <weight>1.0</weight>
+  </trigger>
+  <facilitate>
+       <source>G1</source>
+       <target>G2</target>
+       <weight>1.0</weight>
+  </facilitate>
+  <facilitate>
+       <source>A</source>
+       <target>G1</target>
+       <weight>1.0</weight>
+  </facilitate>
+  <facilitate>
+       <source>A</source>
+       <target>G2</target>
+       <weight>1.0</weight>
+  </facilitate>
+  </constraints>		
+   </CoherenceModel>		
+</Agent>
+</ECoModel>
