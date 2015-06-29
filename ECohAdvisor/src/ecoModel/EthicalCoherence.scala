@@ -52,7 +52,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 
-
+import scala.collection.mutable.Map
 
 object EthicalCoherence extends SimpleSwingApplication {
   var g: Graph[String,Number] = null;
@@ -62,11 +62,13 @@ object EthicalCoherence extends SimpleSwingApplication {
   g = og; 
   var vv : VisualizationViewer[String,Number] = null
   var layout : AbstractLayout[String,Number]  = null
+  val ACTIVATION = 0.1
+  var activations:Map[String,Double]  = Map()
+  var edgeWeights:Map[Int,Double] = Map()
+  
   def top =new MainFrame {
     title = "Ethical Coherence Advisor Tool"
-   
-    
-    
+  
     var compileButton = new Button {
       text = "Compile"
     }
@@ -126,29 +128,6 @@ object EthicalCoherence extends SimpleSwingApplication {
     
     layout = new FRLayout2[String,Number](g);
     vv = new VisualizationViewer[String,Number](layout, new Dimension(600,600));
-    
-    
-    vv.getModel().getRelaxer().setSleepTime(500);
-    vv.setGraphMouse(new DefaultModalGraphMouse[Number,Number]());
-    vv.getRenderer().getVertexLabelRenderer().setPosition(Renderer.VertexLabel.Position.CNTR);
-    vv.getRenderContext().setVertexLabelTransformer(new ToStringLabeller[String]());
-    vv.setForeground(Color.white);
-              
-    var vertexPaint = new Transformer[String,Paint]() {
-                  def transform (i:String) : Paint = {
-                    new Color(new java.lang.Float(0),new java.lang.Float(0),new java.lang.Float(1))         
-                  }
-              };
-   
-    var vertexSize =  new Transformer[String,Shape](){
-                  def  transform(i: String) : Shape = {
-                      var circle = new Ellipse2D.Double(-15, -15, 50, 50);
-                      // in this case, the vertex is twice as large
-                       return AffineTransform.getScaleInstance(1,1).createTransformedShape(circle);
-                  }
-              };
-    vv.getRenderContext().setVertexFillPaintTransformer(vertexPaint);
-    vv.getRenderContext().setVertexShapeTransformer(vertexSize);
     
     var vvWrap = Component.wrap(vv)
     
@@ -232,73 +211,20 @@ object EthicalCoherence extends SimpleSwingApplication {
     
     reactions += {
       case ButtonClicked(component) if component == exportButton =>
-           
-      
-      case ButtonClicked(component) if component == compileButton =>
-        
-        var dbFactory = DocumentBuilderFactory.newInstance()
-        var dBuilder = dbFactory.newDocumentBuilder()
-        var is = new InputSource(new StringReader(textArea2.text)) 
-        var doc = dBuilder.parse(is)
-      
-        doc.getDocumentElement().normalize()
-       
-        System.out.println("Root element :" + doc.getDocumentElement().getNodeName())
-     
-        var goalList = doc.getElementsByTagName("goal")
-        var myStr : String = null
-        for (a <- 0 to goalList.getLength()-1) {
-          var nNode = goalList.item(a)
-          var eElement = nNode.asInstanceOf[Element]
-          myStr = eElement.getElementsByTagName("name").item(0).getTextContent()
-          g.addVertex(myStr)
-          System.out.println(myStr)
-        }
-        
-        var evidenceList = doc.getElementsByTagName("evidence")
-       
-        for (a <- 0 to evidenceList.getLength()-1) {
-          var nNode = evidenceList.item(a)
-          var eElement = nNode.asInstanceOf[Element]
-          myStr = eElement.getElementsByTagName("name").item(0).getTextContent()
-          g.addVertex(myStr)
-          System.out.println(myStr)
-        } 
-        
-        var beliefList = doc.getElementsByTagName("belief")
-       
-        for (a <- 0 to beliefList.getLength()-1) {
-          var nNode = beliefList.item(a)
-          var eElement = nNode.asInstanceOf[Element]
-          myStr = eElement.getElementsByTagName("name").item(0).getTextContent()
-          g.addVertex(myStr)
-          System.out.println(myStr)
-        }   
-        
-         var actionList = doc.getElementsByTagName("action")
-       
-        for (a <- 0 to actionList.getLength()-1) {
-          var nNode = actionList.item(a)
-          var eElement = nNode.asInstanceOf[Element]
-          myStr = eElement.getElementsByTagName("name").item(0).getTextContent()
-          g.addVertex(myStr)
-          System.out.println(myStr)
-        } 
-        
+             
+      case ButtonClicked(component) if component == compileButton => 
+        xmlModelParse(textArea2)
+        graphIterator()
+             
       case ButtonClicked(component) if component == displayButton =>
-        
-        var v1 = new String("Test1")
-        var v2 = new String("Test2")
-
-        g.addVertex(v1)    
-        g.addVertex(v2)
-        g.addEdge(g.getEdgeCount(),v1,v2)
-        var v3 = new String("Test"+g.getVertexCount()+1)
-        g.addVertex(v3)
-        g.addEdge(g.getEdgeCount(),v2,v3)
+          var relaxer = vv.getModel().getRelaxer();
+          vv.getModel().getRelaxer().setSleepTime(500);
+          vv.setGraphMouse(new DefaultModalGraphMouse[Number,Number]());
+          vv.getRenderer().getVertexLabelRenderer().setPosition(Renderer.VertexLabel.Position.CNTR);
+          vv.getRenderContext().setVertexLabelTransformer(new ToStringLabeller[String]());
+          vv.setForeground(Color.white);
            
-           
-        var relaxer : Relaxer = vv.getModel().getRelaxer();
+       
         var vertexPaint = new Transformer[String,Paint]() {
                   def transform (i:String) : Paint = {
                     new Color(new java.lang.Float(0),new java.lang.Float(0),new java.lang.Float(1))         
@@ -312,22 +238,25 @@ object EthicalCoherence extends SimpleSwingApplication {
                        return AffineTransform.getScaleInstance(1,1).createTransformedShape(circle);
                   }
               };
+              
+         var colorTransformer = new Transformer[Number,Paint]() {
+                 def transform(i:Number):Paint = {                    
+                    return Color.RED
+                 }
+         }     
+              
          vv.getRenderContext().setVertexFillPaintTransformer(vertexPaint);
          vv.getRenderContext().setVertexShapeTransformer(vertexSize);
+         vv.getRenderContext().setArrowFillPaintTransformer(colorTransformer)
+         vv.getRenderContext().setArrowDrawPaintTransformer(colorTransformer)
+         vv.getRenderContext().setEdgeDrawPaintTransformer(colorTransformer)
+         
          layout.initialize();
          relaxer.resume();
          
          
        case ButtonClicked(component) if component == computeButton =>
-        var v1 = new String("Test1")
-        var v2 = new String("Test2")
-
-        g.addVertex(v1)    
-        g.addVertex(v2)
-        g.addEdge(g.getEdgeCount(),v1,v2)
-        var v3 = new String("Test"+g.getVertexCount()+1)
-        g.addVertex(v3)
-        g.addEdge(g.getEdgeCount(),v2,v3)
+     
            
            
         var relaxer : Relaxer = vv.getModel().getRelaxer();
@@ -355,8 +284,175 @@ object EthicalCoherence extends SimpleSwingApplication {
     }
     
 }
-    def xmlModelParse() {
+  
+    def graphIterator() {
       
+    }
+  
+    def xmlModelParse(textArea2:TextArea) {
+        var dbFactory = DocumentBuilderFactory.newInstance()
+        var dBuilder = dbFactory.newDocumentBuilder()
+        var is = new InputSource(new StringReader(textArea2.text)) 
+        var doc = dBuilder.parse(is)
+      
+        doc.getDocumentElement().normalize()
+       
+        System.out.println("Root element :" + doc.getDocumentElement().getNodeName())
+         
+        var goalList = doc.getElementsByTagName("goal")
+        var myStr : String = null
+        for (a <- 0 to goalList.getLength()-1) {
+          var nNode = goalList.item(a)
+          var eElement = nNode.asInstanceOf[Element]
+          myStr = eElement.getElementsByTagName("name").item(0).getTextContent()
+          g.addVertex(myStr)
+          activations+=(myStr -> ACTIVATION)
+          System.out.println(myStr)
+        }
+        
+        var evidenceList = doc.getElementsByTagName("evidence")
+       
+        for (a <- 0 to evidenceList.getLength()-1) {
+          var nNode = evidenceList.item(a)
+          var eElement = nNode.asInstanceOf[Element]
+          myStr = eElement.getElementsByTagName("name").item(0).getTextContent()
+          g.addVertex(myStr)
+          activations+=(myStr -> ACTIVATION)
+          System.out.println(myStr)
+        } 
+        
+        var beliefList = doc.getElementsByTagName("belief")
+       
+        for (a <- 0 to beliefList.getLength()-1) {
+          var nNode = beliefList.item(a)
+          var eElement = nNode.asInstanceOf[Element]
+          myStr = eElement.getElementsByTagName("name").item(0).getTextContent()
+          g.addVertex(myStr)
+          activations+=(myStr -> ACTIVATION)
+          System.out.println(myStr)
+        }   
+        
+         var actionList = doc.getElementsByTagName("action")
+       
+        for (a <- 0 to actionList.getLength()-1) {
+          var nNode = actionList.item(a)
+          var eElement = nNode.asInstanceOf[Element]
+          myStr = eElement.getElementsByTagName("name").item(0).getTextContent()
+          g.addVertex(myStr)
+          activations+=(myStr -> ACTIVATION)
+          System.out.println(myStr)
+        } 
+         
+         var sourceStr : String = null
+         var targetStr : String = null
+         var weight : Double = 0.0
+         var expConstraints = doc.getElementsByTagName("explain")
+         for (a <- 0 to expConstraints.getLength()-1) {
+           var sNode = expConstraints.item(a)
+           var eElement = sNode.asInstanceOf[Element]
+           sourceStr = eElement.getElementsByTagName("source").item(0).getTextContent()
+           targetStr = eElement.getElementsByTagName("target").item(0).getTextContent()
+           weight = eElement.getElementsByTagName("weight").item(0).getTextContent().toDouble
+           var edgeCount = g.getEdgeCount()
+           g.addEdge(g.getEdgeCount(),sourceStr,targetStr)
+           edgeWeights+=(edgeCount -> weight)
+         }
+         
+         var deduceConstraints = doc.getElementsByTagName("deduce")
+         for (a <- 0 to deduceConstraints.getLength()-1) {
+           var sNode = deduceConstraints.item(a)
+           var eElement = sNode.asInstanceOf[Element]
+           sourceStr = eElement.getElementsByTagName("source").item(0).getTextContent()
+           targetStr = eElement.getElementsByTagName("target").item(0).getTextContent()
+           weight = eElement.getElementsByTagName("weight").item(0).getTextContent().toDouble
+           var edgeCount = g.getEdgeCount()
+           g.addEdge(g.getEdgeCount(),sourceStr,targetStr)
+           edgeWeights+=(edgeCount -> weight)           
+         }
+         
+         var facilitateConstraints = doc.getElementsByTagName("facilitate")
+         for (a <- 0 to facilitateConstraints.getLength()-1) {
+           var sNode = facilitateConstraints.item(a)
+           var eElement = sNode.asInstanceOf[Element]
+           sourceStr = eElement.getElementsByTagName("source").item(0).getTextContent()
+           targetStr = eElement.getElementsByTagName("target").item(0).getTextContent()
+           weight = eElement.getElementsByTagName("weight").item(0).getTextContent().toDouble
+           var edgeCount = g.getEdgeCount()
+           g.addEdge(g.getEdgeCount(),sourceStr,targetStr)
+           edgeWeights+=(edgeCount -> weight)          
+         }
+         
+         var triggerConstraints = doc.getElementsByTagName("trigger")
+         for (a <- 0 to triggerConstraints.getLength()-1) {
+           var sNode = triggerConstraints.item(a)
+           var eElement = sNode.asInstanceOf[Element]
+           sourceStr = eElement.getElementsByTagName("source").item(0).getTextContent()
+           targetStr = eElement.getElementsByTagName("target").item(0).getTextContent()
+           weight = eElement.getElementsByTagName("weight").item(0).getTextContent().toDouble
+           var edgeCount = g.getEdgeCount()
+           g.addEdge(g.getEdgeCount(),sourceStr,targetStr)
+           edgeWeights+=(edgeCount -> weight)           
+         }
+         
+         var inhibitConstraints = doc.getElementsByTagName("inhibit")
+         for (a <- 0 to inhibitConstraints.getLength()-1) {
+           var sNode = inhibitConstraints.item(a)
+           var eElement = sNode.asInstanceOf[Element]
+           sourceStr = eElement.getElementsByTagName("source").item(0).getTextContent()
+           targetStr = eElement.getElementsByTagName("target").item(0).getTextContent()
+           weight = eElement.getElementsByTagName("weight").item(0).getTextContent().toDouble
+           var edgeCount = g.getEdgeCount()
+           g.addEdge(g.getEdgeCount(),sourceStr,targetStr)
+           edgeWeights+=(edgeCount -> weight)           
+         }
+         
+         var incompatibleConstraints = doc.getElementsByTagName("incompatible")
+         for (a <- 0 to incompatibleConstraints.getLength()-1) {
+           var sNode = incompatibleConstraints.item(a)
+           var eElement = sNode.asInstanceOf[Element]
+           sourceStr = eElement.getElementsByTagName("source").item(0).getTextContent()
+           targetStr = eElement.getElementsByTagName("target").item(0).getTextContent()
+           weight = eElement.getElementsByTagName("weight").item(0).getTextContent().toDouble
+           var edgeCount = g.getEdgeCount()
+           g.addEdge(g.getEdgeCount(),sourceStr,targetStr)
+           edgeWeights+=(edgeCount -> weight)          
+         }
+         
+         var contradictConstraints = doc.getElementsByTagName("contradict")
+         for (a <- 0 to contradictConstraints.getLength()-1) {
+           var sNode = contradictConstraints.item(a)
+           var eElement = sNode.asInstanceOf[Element]
+           sourceStr = eElement.getElementsByTagName("source").item(0).getTextContent()
+           targetStr = eElement.getElementsByTagName("target").item(0).getTextContent()
+           weight = eElement.getElementsByTagName("weight").item(0).getTextContent().toDouble
+           var edgeCount = g.getEdgeCount()
+           g.addEdge(g.getEdgeCount(),sourceStr,targetStr)
+           edgeWeights+=(edgeCount -> weight)          
+         }
+         
+         var similarConstraints = doc.getElementsByTagName("similar")
+         for (a <- 0 to similarConstraints.getLength()-1) {
+           var sNode = similarConstraints.item(a)
+           var eElement = sNode.asInstanceOf[Element]
+           sourceStr = eElement.getElementsByTagName("source").item(0).getTextContent()
+           targetStr = eElement.getElementsByTagName("target").item(0).getTextContent()
+           weight = eElement.getElementsByTagName("weight").item(0).getTextContent().toDouble
+           var edgeCount = g.getEdgeCount()
+           g.addEdge(g.getEdgeCount(),sourceStr,targetStr)
+           edgeWeights+=(edgeCount -> weight)           
+         }
+         
+         var competeConstraints = doc.getElementsByTagName("compete")
+         for (a <- 0 to competeConstraints.getLength()-1) {
+           var sNode = competeConstraints.item(a)
+           var eElement = sNode.asInstanceOf[Element]
+           sourceStr = eElement.getElementsByTagName("source").item(0).getTextContent()
+           targetStr = eElement.getElementsByTagName("target").item(0).getTextContent()
+           weight = eElement.getElementsByTagName("weight").item(0).getTextContent().toDouble
+           var edgeCount = g.getEdgeCount()
+           g.addEdge(g.getEdgeCount(),sourceStr,targetStr)
+           edgeWeights+=(edgeCount -> weight)           
+         }
     }
 
 }
