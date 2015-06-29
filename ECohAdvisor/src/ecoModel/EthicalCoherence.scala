@@ -55,14 +55,19 @@ import java.util.LinkedList;
 import scala.collection.mutable.Map
 
 object EthicalCoherence extends SimpleSwingApplication {
-  var g: Graph[String,Number] = null;
-  var og: ObservableGraph[String,Number] =null;
-  var ig = Graphs.synchronizedUndirectedGraph[String,Number](new UndirectedSparseMultigraph[String,Number]())
-  og = new ObservableGraph[String,Number](ig)   
+  var g: Graph[String,Int] = null;
+  var og: ObservableGraph[String,Int] =null;
+  var ig = Graphs.synchronizedUndirectedGraph[String,Int](new UndirectedSparseMultigraph[String,Int]())
+  og = new ObservableGraph[String,Int](ig)   
   g = og; 
-  var vv : VisualizationViewer[String,Number] = null
-  var layout : AbstractLayout[String,Number]  = null
+  var vv : VisualizationViewer[String,Int] = null
+  var layout : AbstractLayout[String,Int]  = null
   val ACTIVATION = 0.1
+  val CTHRESHOLD = 0.01 
+  val MAXITERATION = 300
+  val MAX = 1
+  val MIN = -1
+  val DECAYRATE = 0.05
   var activations:Map[String,Double]  = Map()
   var edgeWeights:Map[Int,Double] = Map()
   
@@ -85,8 +90,8 @@ object EthicalCoherence extends SimpleSwingApplication {
       text = "Simulate Process"
     }
     
-    var exportButton = new Button {
-      text = "Export Model"
+    var clearButton = new Button {
+      text = "Clear Model"
     }
     
     
@@ -95,7 +100,7 @@ object EthicalCoherence extends SimpleSwingApplication {
       contents+=displayButton
       contents+=computeButton
       contents+=simulateButton
-      contents+=exportButton
+      contents+=clearButton
     }
     
     var text = ""
@@ -126,8 +131,8 @@ object EthicalCoherence extends SimpleSwingApplication {
     
     
     
-    layout = new FRLayout2[String,Number](g);
-    vv = new VisualizationViewer[String,Number](layout, new Dimension(600,600));
+    layout = new FRLayout2[String,Int](g);
+    vv = new VisualizationViewer[String,Int](layout, new Dimension(600,600));
     
     var vvWrap = Component.wrap(vv)
     
@@ -204,65 +209,43 @@ object EthicalCoherence extends SimpleSwingApplication {
       }
     }
     
-    listenTo(exportButton)
+    listenTo(clearButton)
     listenTo(computeButton)
     listenTo(compileButton)
     listenTo(displayButton)
     
     reactions += {
-      case ButtonClicked(component) if component == exportButton =>
+      case ButtonClicked(component) if component == clearButton => 
+        initializeCoherenceGraph()
+        //textArea2.text=" "
+        display()
+        
              
       case ButtonClicked(component) if component == compileButton => 
+        textArea2.selectAll()
+        textArea2.text=textArea2.selected     
         xmlModelParse(textArea2)
         graphIterator()
              
       case ButtonClicked(component) if component == displayButton =>
-          var relaxer = vv.getModel().getRelaxer();
-          vv.getModel().getRelaxer().setSleepTime(500);
-          vv.setGraphMouse(new DefaultModalGraphMouse[Number,Number]());
-          vv.getRenderer().getVertexLabelRenderer().setPosition(Renderer.VertexLabel.Position.CNTR);
-          vv.getRenderContext().setVertexLabelTransformer(new ToStringLabeller[String]());
-          vv.setForeground(Color.white);
-           
-       
-        var vertexPaint = new Transformer[String,Paint]() {
-                  def transform (i:String) : Paint = {
-                    new Color(new java.lang.Float(0),new java.lang.Float(0),new java.lang.Float(1))         
-                  }
-              };
-   
-         var vertexSize =  new Transformer[String,Shape](){
-                  def  transform(i: String) : Shape = {
-                      var circle = new Ellipse2D.Double(-15, -15, 50, 50);
-                      // in this case, the vertex is twice as large
-                       return AffineTransform.getScaleInstance(1,1).createTransformedShape(circle);
-                  }
-              };
-              
-         var colorTransformer = new Transformer[Number,Paint]() {
-                 def transform(i:Number):Paint = {                    
-                    return Color.RED
-                 }
-         }     
-              
-         vv.getRenderContext().setVertexFillPaintTransformer(vertexPaint);
-         vv.getRenderContext().setVertexShapeTransformer(vertexSize);
-         vv.getRenderContext().setArrowFillPaintTransformer(colorTransformer)
-         vv.getRenderContext().setArrowDrawPaintTransformer(colorTransformer)
-         vv.getRenderContext().setEdgeDrawPaintTransformer(colorTransformer)
-         
-         layout.initialize();
-         relaxer.resume();
+          display()
          
          
        case ButtonClicked(component) if component == computeButton =>
-     
+         System.out.println("Activation levels before coherence maximizer")
+         reportActivationLevels()
+         activationCompute()
+         System.out.println("Activation levels after coherence maximizer")
+         reportActivationLevels()
            
            
         var relaxer : Relaxer = vv.getModel().getRelaxer();
         var vertexPaint = new Transformer[String,Paint]() {
                   def transform (i:String) : Paint = {
-                    new Color(new java.lang.Float(1),new java.lang.Float(0),new java.lang.Float(0))         
+                    var R=0
+                    var B=0;
+                    if (activations(i) > 0) {R=1;B=0} else {R=0;B=1}
+                    new Color(new java.lang.Float(R),new java.lang.Float(0),new java.lang.Float(B))         
                   }
               };
    
@@ -273,8 +256,19 @@ object EthicalCoherence extends SimpleSwingApplication {
                        return AffineTransform.getScaleInstance(1,1).createTransformedShape(circle);
                   }
               };
-         vv.getRenderContext().setVertexFillPaintTransformer(vertexPaint);
-         vv.getRenderContext().setVertexShapeTransformer(vertexSize);
+         
+         var colorTransformer = new Transformer[Int,Paint]() {
+                 def transform(i:Int):Paint = { 
+                    if (edgeWeights(i)<0) {return Color.RED}
+                    else return Color.BLACK
+                 }
+         }        
+         
+         vv.getRenderContext().setVertexFillPaintTransformer(vertexPaint)
+         vv.getRenderContext().setVertexShapeTransformer(vertexSize)
+         vv.getRenderContext().setArrowFillPaintTransformer(colorTransformer)
+         vv.getRenderContext().setArrowDrawPaintTransformer(colorTransformer)
+         vv.getRenderContext().setEdgeDrawPaintTransformer(colorTransformer)
          layout.initialize();
          relaxer.resume();
        
@@ -285,7 +279,132 @@ object EthicalCoherence extends SimpleSwingApplication {
     
 }
   
+    def display() {
+      var relaxer = vv.getModel().getRelaxer();
+          vv.getModel().getRelaxer().setSleepTime(500);
+          vv.setGraphMouse(new DefaultModalGraphMouse[Number,Number]());
+          vv.getRenderer().getVertexLabelRenderer().setPosition(Renderer.VertexLabel.Position.CNTR);
+          vv.getRenderContext().setVertexLabelTransformer(new ToStringLabeller[String]());
+          vv.setForeground(Color.white);
+           
+       
+        var vertexPaint = new Transformer[String,Paint]() {
+                  def transform (i:String) : Paint = {
+                     new Color(new java.lang.Float(0),new java.lang.Float(0),new java.lang.Float(1))         
+                  }
+              };
+   
+         var vertexSize =  new Transformer[String,Shape](){
+                  def  transform(i: String) : Shape = {
+                      var circle = new Ellipse2D.Double(-15, -15, 50, 50);
+                      // in this case, the vertex is twice as large
+                       return AffineTransform.getScaleInstance(1,1).createTransformedShape(circle);
+                  }
+              };
+              
+         var colorTransformer = new Transformer[Int,Paint]() {
+                 def transform(i:Int):Paint = { 
+                    if (edgeWeights(i)<0) {return Color.RED}
+                    else return Color.BLACK
+                 }
+         }     
+              
+         vv.getRenderContext().setVertexFillPaintTransformer(vertexPaint)
+         vv.getRenderContext().setVertexShapeTransformer(vertexSize)
+         vv.getRenderContext().setArrowFillPaintTransformer(colorTransformer)
+         vv.getRenderContext().setArrowDrawPaintTransformer(colorTransformer)
+         vv.getRenderContext().setEdgeDrawPaintTransformer(colorTransformer)
+         
+         layout.initialize();
+         relaxer.resume();
+    }
+  
+    def reportActivationLevels() {
+      var V = g.getVertices
+      var itr = V.iterator()
+      System.out.println("Activation Levels: ")
+      while (itr.hasNext()) {
+        var myN = itr.next()
+        System.out.print("Node name: "+myN+ " ")
+        System.out.println("Activation: "+ activations(myN))
+      }
+    }
+  
     def graphIterator() {
+      
+      var V = g.getVertices
+      var itr = V.iterator()
+      System.out.println("Vertex List: ")
+      while (itr.hasNext()) {
+        var myN = itr.next()
+        System.out.print("Node name: "+myN+ " ")
+        System.out.println("Activation: "+ activations(myN))
+         
+        var incIter = g.getIncidentEdges(myN).iterator()
+        while (incIter.hasNext()) {
+          var myEdge = incIter.next()
+          System.out.println("Incident edge number: "+ myEdge+" Weight is " + edgeWeights(myEdge) +" Source is "+g.getEndpoints(myEdge).getFirst+" Target is "+ g.getEndpoints(myEdge).getSecond)
+        }
+      }   
+    }
+    
+    
+    def activationCompute() {
+      
+      var maxChange = 1.0
+      var count =0;
+      var V = g.getVertices
+      var itr = V.iterator()
+      var activationsatT = activations.clone()
+      while ((maxChange > CTHRESHOLD) && (count < MAXITERATION)) {
+        while (itr.hasNext()) {
+          var myNode=itr.next()
+          var newA = update(myNode,activationsatT)
+          var diffA = Math.abs(newA-activations(myNode))
+          if (diffA < maxChange) maxChange = diffA 
+          activations(myNode)=newA
+        }
+        itr=V.iterator()
+        activationsatT = activations.clone()
+        count+=1
+      }
+    }
+    
+    def update (str:String, actAtT:Map[String,Double]): Double = {
+      var cActivation = actAtT(str)
+      var nActivation=0.0
+      var netFlow = 0.0;
+      var itr = g.getIncidentEdges(str).iterator()
+      while (itr.hasNext()) {
+        var myEdge = itr.next()
+        var vt = g.getOpposite(str,myEdge)
+        netFlow += edgeWeights(myEdge)*actAtT(vt) 
+      }
+      
+      if (netFlow > 0) {
+        nActivation=(cActivation*(1-DECAYRATE))+(netFlow*(MAX-cActivation))
+      }
+      else nActivation = netFlow*(cActivation-MIN)
+      
+      return nActivation
+    }
+    
+    
+    def initializeCoherenceGraph() {
+      
+      if (g.getVertexCount>0) {
+        var V = g.getVertices
+        var vertices=V.toArray()
+        for (i <- 0 to g.getVertexCount-1) {
+          g.removeVertex(vertices(i).asInstanceOf[String])
+        }
+      } 
+      var eC= g.getEdgeCount()
+      if (eC>0) {
+        for (i <- 0 to eC-1) {
+          g.removeEdge(i)
+        }
+      }
       
     }
   
@@ -294,7 +413,7 @@ object EthicalCoherence extends SimpleSwingApplication {
         var dBuilder = dbFactory.newDocumentBuilder()
         var is = new InputSource(new StringReader(textArea2.text)) 
         var doc = dBuilder.parse(is)
-      
+        initializeCoherenceGraph()
         doc.getDocumentElement().normalize()
        
         System.out.println("Root element :" + doc.getDocumentElement().getNodeName())
@@ -350,20 +469,20 @@ object EthicalCoherence extends SimpleSwingApplication {
          for (a <- 0 to expConstraints.getLength()-1) {
            var sNode = expConstraints.item(a)
            var eElement = sNode.asInstanceOf[Element]
-           sourceStr = eElement.getElementsByTagName("source").item(0).getTextContent()
-           targetStr = eElement.getElementsByTagName("target").item(0).getTextContent()
+           sourceStr = new String(eElement.getElementsByTagName("source").item(0).getTextContent())
+           targetStr = new String(eElement.getElementsByTagName("target").item(0).getTextContent())
            weight = eElement.getElementsByTagName("weight").item(0).getTextContent().toDouble
            var edgeCount = g.getEdgeCount()
            g.addEdge(g.getEdgeCount(),sourceStr,targetStr)
-           edgeWeights+=(edgeCount -> weight)
+           edgeWeights+=(edgeCount -> weight)   
          }
          
          var deduceConstraints = doc.getElementsByTagName("deduce")
          for (a <- 0 to deduceConstraints.getLength()-1) {
            var sNode = deduceConstraints.item(a)
            var eElement = sNode.asInstanceOf[Element]
-           sourceStr = eElement.getElementsByTagName("source").item(0).getTextContent()
-           targetStr = eElement.getElementsByTagName("target").item(0).getTextContent()
+           sourceStr = new String(eElement.getElementsByTagName("source").item(0).getTextContent())
+           targetStr = new String(eElement.getElementsByTagName("target").item(0).getTextContent())
            weight = eElement.getElementsByTagName("weight").item(0).getTextContent().toDouble
            var edgeCount = g.getEdgeCount()
            g.addEdge(g.getEdgeCount(),sourceStr,targetStr)
@@ -374,8 +493,8 @@ object EthicalCoherence extends SimpleSwingApplication {
          for (a <- 0 to facilitateConstraints.getLength()-1) {
            var sNode = facilitateConstraints.item(a)
            var eElement = sNode.asInstanceOf[Element]
-           sourceStr = eElement.getElementsByTagName("source").item(0).getTextContent()
-           targetStr = eElement.getElementsByTagName("target").item(0).getTextContent()
+           sourceStr = new String(eElement.getElementsByTagName("source").item(0).getTextContent())
+           targetStr = new String(eElement.getElementsByTagName("target").item(0).getTextContent())
            weight = eElement.getElementsByTagName("weight").item(0).getTextContent().toDouble
            var edgeCount = g.getEdgeCount()
            g.addEdge(g.getEdgeCount(),sourceStr,targetStr)
@@ -386,8 +505,8 @@ object EthicalCoherence extends SimpleSwingApplication {
          for (a <- 0 to triggerConstraints.getLength()-1) {
            var sNode = triggerConstraints.item(a)
            var eElement = sNode.asInstanceOf[Element]
-           sourceStr = eElement.getElementsByTagName("source").item(0).getTextContent()
-           targetStr = eElement.getElementsByTagName("target").item(0).getTextContent()
+           sourceStr = new String(eElement.getElementsByTagName("source").item(0).getTextContent())
+           targetStr = new String(eElement.getElementsByTagName("target").item(0).getTextContent())
            weight = eElement.getElementsByTagName("weight").item(0).getTextContent().toDouble
            var edgeCount = g.getEdgeCount()
            g.addEdge(g.getEdgeCount(),sourceStr,targetStr)
@@ -398,8 +517,8 @@ object EthicalCoherence extends SimpleSwingApplication {
          for (a <- 0 to inhibitConstraints.getLength()-1) {
            var sNode = inhibitConstraints.item(a)
            var eElement = sNode.asInstanceOf[Element]
-           sourceStr = eElement.getElementsByTagName("source").item(0).getTextContent()
-           targetStr = eElement.getElementsByTagName("target").item(0).getTextContent()
+           sourceStr = new String(eElement.getElementsByTagName("source").item(0).getTextContent())
+           targetStr = new String(eElement.getElementsByTagName("target").item(0).getTextContent())
            weight = eElement.getElementsByTagName("weight").item(0).getTextContent().toDouble
            var edgeCount = g.getEdgeCount()
            g.addEdge(g.getEdgeCount(),sourceStr,targetStr)
@@ -410,8 +529,8 @@ object EthicalCoherence extends SimpleSwingApplication {
          for (a <- 0 to incompatibleConstraints.getLength()-1) {
            var sNode = incompatibleConstraints.item(a)
            var eElement = sNode.asInstanceOf[Element]
-           sourceStr = eElement.getElementsByTagName("source").item(0).getTextContent()
-           targetStr = eElement.getElementsByTagName("target").item(0).getTextContent()
+           sourceStr = new String(eElement.getElementsByTagName("source").item(0).getTextContent())
+           targetStr = new String(eElement.getElementsByTagName("target").item(0).getTextContent())
            weight = eElement.getElementsByTagName("weight").item(0).getTextContent().toDouble
            var edgeCount = g.getEdgeCount()
            g.addEdge(g.getEdgeCount(),sourceStr,targetStr)
@@ -422,8 +541,8 @@ object EthicalCoherence extends SimpleSwingApplication {
          for (a <- 0 to contradictConstraints.getLength()-1) {
            var sNode = contradictConstraints.item(a)
            var eElement = sNode.asInstanceOf[Element]
-           sourceStr = eElement.getElementsByTagName("source").item(0).getTextContent()
-           targetStr = eElement.getElementsByTagName("target").item(0).getTextContent()
+           sourceStr = new String(eElement.getElementsByTagName("source").item(0).getTextContent())
+           targetStr = new String(eElement.getElementsByTagName("target").item(0).getTextContent())
            weight = eElement.getElementsByTagName("weight").item(0).getTextContent().toDouble
            var edgeCount = g.getEdgeCount()
            g.addEdge(g.getEdgeCount(),sourceStr,targetStr)
@@ -434,8 +553,8 @@ object EthicalCoherence extends SimpleSwingApplication {
          for (a <- 0 to similarConstraints.getLength()-1) {
            var sNode = similarConstraints.item(a)
            var eElement = sNode.asInstanceOf[Element]
-           sourceStr = eElement.getElementsByTagName("source").item(0).getTextContent()
-           targetStr = eElement.getElementsByTagName("target").item(0).getTextContent()
+           sourceStr = new String(eElement.getElementsByTagName("source").item(0).getTextContent())
+           targetStr = new String(eElement.getElementsByTagName("target").item(0).getTextContent())
            weight = eElement.getElementsByTagName("weight").item(0).getTextContent().toDouble
            var edgeCount = g.getEdgeCount()
            g.addEdge(g.getEdgeCount(),sourceStr,targetStr)
@@ -446,8 +565,8 @@ object EthicalCoherence extends SimpleSwingApplication {
          for (a <- 0 to competeConstraints.getLength()-1) {
            var sNode = competeConstraints.item(a)
            var eElement = sNode.asInstanceOf[Element]
-           sourceStr = eElement.getElementsByTagName("source").item(0).getTextContent()
-           targetStr = eElement.getElementsByTagName("target").item(0).getTextContent()
+           sourceStr = new String(eElement.getElementsByTagName("source").item(0).getTextContent())
+           targetStr = new String(eElement.getElementsByTagName("target").item(0).getTextContent())
            weight = eElement.getElementsByTagName("weight").item(0).getTextContent().toDouble
            var edgeCount = g.getEdgeCount()
            g.addEdge(g.getEdgeCount(),sourceStr,targetStr)
