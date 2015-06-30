@@ -54,6 +54,8 @@ import java.util.LinkedList;
 
 import scala.collection.mutable.Map
 
+
+
 object EthicalCoherence extends SimpleSwingApplication {
   var g: Graph[String,Int] = null;
   var og: ObservableGraph[String,Int] =null;
@@ -65,8 +67,8 @@ object EthicalCoherence extends SimpleSwingApplication {
   val ACTIVATION = 0.1
   val CTHRESHOLD = 0.01 
   val MAXITERATION = 300
-  val MAX = 1
-  val MIN = -1
+  val MAX = 1.0
+  val MIN = -1.0
   val DECAYRATE = 0.05
   var activations:Map[String,Double]  = Map()
   var edgeWeights:Map[Int,Double] = Map()
@@ -154,50 +156,29 @@ object EthicalCoherence extends SimpleSwingApplication {
       layout(resultsPanel)=South
       
     }
-    
+
     var modelFileName : String = null
     menuBar = new MenuBar {
       contents += new Menu("File") {
         contents += new MenuItem(Action("Load") {
-           val sf = new Frame {secondFrame => 
-             title = "Load File"
-             preferredSize = new Dimension(300,300)
-             visible = true
-             val textfield:TextField = new TextField {text=""; columns =15}
-             val label:Label = new Label("")
-             contents = new FlowPanel {
-                contents += new Label(" Enter Model Filename")
-                contents += textfield
-                contents += new Button(Action("Select") {
-                     label.text_=("Selected filename: "+textfield.text) 
-                     //val writer = new PrintWriter(new File("ecoDSLTest1.emdl" ))
-                     //writer.write("Hello Scala")
-                     //writer.close()
-                     modelFileName =textfield.text
-                     try {
-                       Source.fromFile(modelFileName).foreach { x => textArea2.text+=x }
-                     } catch {
-                       case ex: FileNotFoundException  => {
-                         println("Missing file exception")
-                       }
-                     }
-                     secondFrame.dispose()})
-                contents += label
-                
-                //contents += new Button(Action("Select Model File")     {quit()})
-             }
-             
-             listenTo(textfield.keys)
-             
-             reactions += {
-                case KeyPressed(_, Key.Enter, _, _) => 
-                     label.text_=("Selected filename: "+textfield.text)
-                     modelFileName = new String(textfield.text)
+            var chooser = new FileChooser
+            val result=chooser.showOpenDialog(null)
+            if (result == FileChooser.Result.Approve) {
+              println("Approve -- " + chooser.selectedFile)
+              Some(chooser.selectedFile)
+            } else None
+            
+            
+            try {
+               Source.fromFile(chooser.selectedFile).foreach { x => textArea2.text+=x } 
+             } 
+            catch {
+                case ex: FileNotFoundException  => {
+                println("Missing file exception")
               }
-             
-           }
-           
-        });
+          }
+ 
+        }   );
         contents += new MenuItem(Action("Save") {
           if (modelFileName != null) {
             val fw = new FileWriter(modelFileName) ; fw.write(textArea2.text) ; fw.close() 
@@ -362,12 +343,13 @@ object EthicalCoherence extends SimpleSwingApplication {
           var newA = update(myNode,activationsatT)
           var diffA = Math.abs(newA-activations(myNode))
           if (diffA < maxChange) maxChange = diffA 
-          activations(myNode)=newA
+          activations(myNode)=newA       
         }
         itr=V.iterator()
         activationsatT = activations.clone()
         count+=1
       }
+      activations.foreach(p => println("node= "+p._1 + ", activation= "+p._2))
     }
     
     def update (str:String, actAtT:Map[String,Double]): Double = {
@@ -382,9 +364,9 @@ object EthicalCoherence extends SimpleSwingApplication {
       }
       
       if (netFlow > 0) {
-        nActivation=(cActivation*(1-DECAYRATE))+(netFlow*(MAX-cActivation))
+        nActivation=Math.max(-1.0,Math.min(1.0,(cActivation*(1.0-DECAYRATE))+(netFlow*(MAX-cActivation))))
       }
-      else nActivation = netFlow*(cActivation-MIN)
+      else nActivation = Math.min(Math.max(-1.0, netFlow*(cActivation-MIN)),1.0)
       
       return nActivation
     }
@@ -415,9 +397,7 @@ object EthicalCoherence extends SimpleSwingApplication {
         var doc = dBuilder.parse(is)
         initializeCoherenceGraph()
         doc.getDocumentElement().normalize()
-       
-        System.out.println("Root element :" + doc.getDocumentElement().getNodeName())
-         
+           
         var goalList = doc.getElementsByTagName("goal")
         var myStr : String = null
         for (a <- 0 to goalList.getLength()-1) {
@@ -425,10 +405,15 @@ object EthicalCoherence extends SimpleSwingApplication {
           var eElement = nNode.asInstanceOf[Element]
           myStr = eElement.getElementsByTagName("name").item(0).getTextContent()
           g.addVertex(myStr)
-          activations+=(myStr -> ACTIVATION)
-          System.out.println(myStr)
+          try {
+            var activationLevel = eElement.getElementsByTagName("activation").item(0).getTextContent()
+            activations+=(myStr -> activationLevel.toDouble)
+          
+          }
+          catch  {
+            case e: Exception => activations+=(myStr -> ACTIVATION)
+          }
         }
-        
         var evidenceList = doc.getElementsByTagName("evidence")
        
         for (a <- 0 to evidenceList.getLength()-1) {
@@ -436,8 +421,14 @@ object EthicalCoherence extends SimpleSwingApplication {
           var eElement = nNode.asInstanceOf[Element]
           myStr = eElement.getElementsByTagName("name").item(0).getTextContent()
           g.addVertex(myStr)
-          activations+=(myStr -> ACTIVATION)
-          System.out.println(myStr)
+          try {
+            var activationLevel = eElement.getElementsByTagName("activation").item(0).getTextContent()
+            activations+=(myStr -> activationLevel.toDouble)
+          
+          }
+          catch  {
+            case e: Exception => activations+=(myStr -> ACTIVATION)
+          }
         } 
         
         var beliefList = doc.getElementsByTagName("belief")
@@ -447,8 +438,14 @@ object EthicalCoherence extends SimpleSwingApplication {
           var eElement = nNode.asInstanceOf[Element]
           myStr = eElement.getElementsByTagName("name").item(0).getTextContent()
           g.addVertex(myStr)
-          activations+=(myStr -> ACTIVATION)
-          System.out.println(myStr)
+          try {
+            var activationLevel = eElement.getElementsByTagName("activation").item(0).getTextContent()
+            activations+=(myStr -> activationLevel.toDouble)
+          
+          }
+          catch  {
+            case e: Exception => activations+=(myStr -> ACTIVATION)
+          }
         }   
         
          var actionList = doc.getElementsByTagName("action")
@@ -458,8 +455,14 @@ object EthicalCoherence extends SimpleSwingApplication {
           var eElement = nNode.asInstanceOf[Element]
           myStr = eElement.getElementsByTagName("name").item(0).getTextContent()
           g.addVertex(myStr)
-          activations+=(myStr -> ACTIVATION)
-          System.out.println(myStr)
+          try {
+            var activationLevel = eElement.getElementsByTagName("activation").item(0).getTextContent()
+            activations+=(myStr -> activationLevel.toDouble)
+          
+          }
+          catch  {
+            case e: Exception => activations+=(myStr -> ACTIVATION)
+          }
         } 
          
          var sourceStr : String = null
