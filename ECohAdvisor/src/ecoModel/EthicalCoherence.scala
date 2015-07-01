@@ -65,7 +65,7 @@ object EthicalCoherence extends SimpleSwingApplication {
   var vv : VisualizationViewer[String,Int] = null
   var layout : AbstractLayout[String,Int]  = null
   val ACTIVATION = 0.1
-  val CTHRESHOLD = 0.01 
+  val CTHRESHOLD = 0.001 
   val MAXITERATION = 300
   val MAX = 1.0
   val MIN = -1.0
@@ -364,9 +364,13 @@ object EthicalCoherence extends SimpleSwingApplication {
       }
       
       if (netFlow > 0) {
-        nActivation=Math.max(-1.0,Math.min(1.0,(cActivation*(1.0-DECAYRATE))+(netFlow*(MAX-cActivation))))
+        nActivation=(cActivation*(1.0-DECAYRATE))+(netFlow*(MAX-cActivation))
+        nActivation=Math.max(-1.0,Math.min(1.0, nActivation))
       }
-      else nActivation = Math.min(Math.max(-1.0, netFlow*(cActivation-MIN)),1.0)
+      else {
+        nActivation=(cActivation*(1.0-DECAYRATE))+(netFlow*(cActivation-MIN))
+        nActivation = Math.min(Math.max(-1.0, nActivation),1.0)
+      }
       
       return nActivation
     }
