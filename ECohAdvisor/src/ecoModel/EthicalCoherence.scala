@@ -114,9 +114,10 @@ object EthicalCoherence extends SimpleSwingApplication {
     var textArea1 = new TextArea(text, 10, 80);
     textArea1.preferredSize_=(new Dimension(100,100))
     textArea1.lineWrap_=(true)
-    var textArea2 = new TextArea(text, 100, 25);
+    var textArea2 = new TextArea(text, 200, 25);
     textArea2.lineWrap_=(true)
     textArea2.preferredSize_=(new Dimension(100, 100));
+    
      
     var scrollPane = new ScrollPane(textArea2) {
       verticalScrollBarPolicy = ScrollPane.BarPolicy.Always
@@ -235,7 +236,7 @@ object EthicalCoherence extends SimpleSwingApplication {
                   def transform (i:String) : Paint = {
                     var R=0
                     var B=0;
-                    if (activations(i) > 0) {R=1;B=0} else {R=0;B=1}
+                    if (activations(i) > 0.25) {R=1;B=0} else {R=0;B=1}
                     new Color(new java.lang.Float(R),new java.lang.Float(0),new java.lang.Float(B))         
                   }
               };
@@ -281,7 +282,10 @@ object EthicalCoherence extends SimpleSwingApplication {
        
         var vertexPaint = new Transformer[String,Paint]() {
                   def transform (i:String) : Paint = {
-                     new Color(new java.lang.Float(0),new java.lang.Float(0),new java.lang.Float(1))         
+                    var R=0
+                    var B=0;
+                    if (activations(i) > 0.5) {R=1;B=0} else {R=0;B=1}
+                    new Color(new java.lang.Float(R),new java.lang.Float(0),new java.lang.Float(B))          
                   }
               };
    
@@ -540,7 +544,7 @@ object EthicalCoherence extends SimpleSwingApplication {
            var eElement = sNode.asInstanceOf[Element]
            sourceStr = new String(eElement.getElementsByTagName("source").item(0).getTextContent())
            targetStr = new String(eElement.getElementsByTagName("target").item(0).getTextContent())
-           weight = eElement.getElementsByTagName("weight").item(0).getTextContent().toDouble
+           weight = 0-eElement.getElementsByTagName("weight").item(0).getTextContent().toDouble
            var edgeCount = g.getEdgeCount()
            g.addEdge(g.getEdgeCount(),sourceStr,targetStr)
            edgeWeights+=(edgeCount -> weight)           
@@ -552,7 +556,7 @@ object EthicalCoherence extends SimpleSwingApplication {
            var eElement = sNode.asInstanceOf[Element]
            sourceStr = new String(eElement.getElementsByTagName("source").item(0).getTextContent())
            targetStr = new String(eElement.getElementsByTagName("target").item(0).getTextContent())
-           weight = eElement.getElementsByTagName("weight").item(0).getTextContent().toDouble
+           weight = 0-eElement.getElementsByTagName("weight").item(0).getTextContent().toDouble
            var edgeCount = g.getEdgeCount()
            g.addEdge(g.getEdgeCount(),sourceStr,targetStr)
            edgeWeights+=(edgeCount -> weight)          
@@ -564,7 +568,7 @@ object EthicalCoherence extends SimpleSwingApplication {
            var eElement = sNode.asInstanceOf[Element]
            sourceStr = new String(eElement.getElementsByTagName("source").item(0).getTextContent())
            targetStr = new String(eElement.getElementsByTagName("target").item(0).getTextContent())
-           weight = eElement.getElementsByTagName("weight").item(0).getTextContent().toDouble
+           weight = 0-eElement.getElementsByTagName("weight").item(0).getTextContent().toDouble
            var edgeCount = g.getEdgeCount()
            g.addEdge(g.getEdgeCount(),sourceStr,targetStr)
            edgeWeights+=(edgeCount -> weight)          
@@ -588,7 +592,7 @@ object EthicalCoherence extends SimpleSwingApplication {
            var eElement = sNode.asInstanceOf[Element]
            sourceStr = new String(eElement.getElementsByTagName("source").item(0).getTextContent())
            targetStr = new String(eElement.getElementsByTagName("target").item(0).getTextContent())
-           weight = eElement.getElementsByTagName("weight").item(0).getTextContent().toDouble
+           weight = 0-eElement.getElementsByTagName("weight").item(0).getTextContent().toDouble
            var edgeCount = g.getEdgeCount()
            g.addEdge(g.getEdgeCount(),sourceStr,targetStr)
            edgeWeights+=(edgeCount -> weight)           
