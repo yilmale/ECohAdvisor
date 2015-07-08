@@ -97,12 +97,17 @@ object EthicalCoherence extends SimpleSwingApplication {
     }
     
     
+   var clearConsoleButton = new Button {
+      text = "Clear Console"
+    }
+    
     var controlPanel = new FlowPanel() { 
       contents+=compileButton
       contents+=displayButton
       contents+=computeButton
       contents+=simulateButton
       contents+=clearButton
+      contents+=clearConsoleButton
     }
     
     var text = ""
@@ -194,6 +199,7 @@ object EthicalCoherence extends SimpleSwingApplication {
     listenTo(computeButton)
     listenTo(compileButton)
     listenTo(displayButton)
+    listenTo(clearConsoleButton)
     
     reactions += {
       case ButtonClicked(component) if component == clearButton => 
@@ -201,7 +207,10 @@ object EthicalCoherence extends SimpleSwingApplication {
         //textArea2.text=" "
         display()
         
-             
+      case ButtonClicked(component) if component == clearConsoleButton => 
+        textArea1.text=" "
+       
+        
       case ButtonClicked(component) if component == compileButton => 
         textArea2.selectAll()
         textArea2.text=textArea2.selected     
@@ -213,11 +222,12 @@ object EthicalCoherence extends SimpleSwingApplication {
          
          
        case ButtonClicked(component) if component == computeButton =>
-         System.out.println("Activation levels before coherence maximizer")
-         reportActivationLevels()
+          
+         textArea1.append("Activation levels before coherence maximizer\n")
+         reportActivationLevels(textArea1)
          activationCompute()
-         System.out.println("Activation levels after coherence maximizer")
-         reportActivationLevels()
+         textArea1.append("Activation levels after coherence maximizer\n")
+         reportActivationLevels(textArea1)
            
            
         var relaxer : Relaxer = vv.getModel().getRelaxer();
@@ -300,15 +310,19 @@ object EthicalCoherence extends SimpleSwingApplication {
          relaxer.resume();
     }
   
-    def reportActivationLevels() {
+    def reportActivationLevels(textArea:TextArea) {
       var V = g.getVertices
       var itr = V.iterator()
-      System.out.println("Activation Levels: ")
+     
       while (itr.hasNext()) {
         var myN = itr.next()
         System.out.print("Node name: "+myN+ " ")
+        textArea.append(""+myN+ ":")
         System.out.println("Activation: "+ activations(myN))
+        textArea.append(""+ activations(myN))
+        textArea.append("  ")
       }
+      textArea.append("\n")
     }
   
     def graphIterator() {
