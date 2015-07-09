@@ -65,6 +65,8 @@ object EthicalCoherence extends SimpleSwingApplication {
   var vv : VisualizationViewer[String,Int] = null
   var layout : AbstractLayout[String,Int]  = null
   val ACTIVATION = 0.1
+  val ACTIVATIONTHRESHOLD = 0.25
+  val INITIALTHRESHOLD = 0.5
   val CTHRESHOLD = 0.001 
   val MAXITERATION = 300
   val MAX = 1.0
@@ -236,7 +238,7 @@ object EthicalCoherence extends SimpleSwingApplication {
                   def transform (i:String) : Paint = {
                     var R=0
                     var B=0;
-                    if (activations(i) > 0.25) {R=1;B=0} else {R=0;B=1}
+                    if (activations(i) > ACTIVATIONTHRESHOLD) {R=1;B=0} else {R=0;B=1}
                     new Color(new java.lang.Float(R),new java.lang.Float(0),new java.lang.Float(B))         
                   }
               };
@@ -284,7 +286,7 @@ object EthicalCoherence extends SimpleSwingApplication {
                   def transform (i:String) : Paint = {
                     var R=0
                     var B=0;
-                    if (activations(i) > 0.5) {R=1;B=0} else {R=0;B=1}
+                    if (activations(i) > INITIALTHRESHOLD) {R=1;B=0} else {R=0;B=1}
                     new Color(new java.lang.Float(R),new java.lang.Float(0),new java.lang.Float(B))          
                   }
               };
