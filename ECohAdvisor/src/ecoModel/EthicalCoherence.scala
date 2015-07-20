@@ -65,7 +65,7 @@ object EthicalCoherence extends SimpleSwingApplication {
   var vv : VisualizationViewer[String,Int] = null
   var layout : AbstractLayout[String,Int]  = null
   val ACTIVATION = 0.1
-  val ACTIVATIONTHRESHOLD = 0.25
+  val ACTIVATIONTHRESHOLD = 0.50
   val INITIALTHRESHOLD = 0.5
   val CTHRESHOLD = 0.001 
   val MAXITERATION = 300
@@ -116,7 +116,7 @@ object EthicalCoherence extends SimpleSwingApplication {
     var textArea1 = new TextArea(text, 10, 80);
     textArea1.preferredSize_=(new Dimension(100,100))
     textArea1.lineWrap_=(true)
-    var textArea2 = new TextArea(text, 200, 25);
+    var textArea2 = new TextArea(text, 300, 25);
     textArea2.lineWrap_=(true)
     textArea2.preferredSize_=(new Dimension(100, 100));
     
