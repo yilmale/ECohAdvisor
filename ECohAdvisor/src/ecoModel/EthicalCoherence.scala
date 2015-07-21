@@ -64,11 +64,11 @@ object EthicalCoherence extends SimpleSwingApplication {
   g = og; 
   var vv : VisualizationViewer[String,Int] = null
   var layout : AbstractLayout[String,Int]  = null
-  val ACTIVATION = 0.1
-  val ACTIVATIONTHRESHOLD = 0.50
+  val ACTIVATION = 0.01
+  val ACTIVATIONTHRESHOLD = 0.20
   val INITIALTHRESHOLD = 0.5
   val CTHRESHOLD = 0.001 
-  val MAXITERATION = 300
+  val MAXITERATION = 1000
   val MAX = 1.0
   val MIN = -1.0
   val DECAYRATE = 0.05
