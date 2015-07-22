@@ -387,8 +387,6 @@ object EthicalCoherence extends SimpleSwingApplication {
       if (netFlow > 0) {
         nActivation=(cActivation*(1.0-DECAYRATE))+(netFlow*(MAX-cActivation))
         nActivation=Math.max(-1.0,Math.min(1.0, nActivation))
-        var mys = "LS"
-        if (str.compareTo(mys)==0) System.out.println("LS netwflow is "+netFlow+"and net activation is "+nActivation)
       }
       else {
         nActivation=(cActivation*(1.0-DECAYRATE))+(netFlow*(cActivation-MIN))
