@@ -68,7 +68,7 @@ object EthicalCoherence extends SimpleSwingApplication {
   val ACTIVATIONTHRESHOLD = 0.20
   val INITIALTHRESHOLD = 0.5
   val CTHRESHOLD = 0.001 
-  val MAXITERATION = 1000
+  val MAXITERATION = 200
   val MAX = 1.0
   val MIN = -1.0
   val DECAYRATE = 0.05
@@ -345,6 +345,7 @@ object EthicalCoherence extends SimpleSwingApplication {
         while (incIter.hasNext()) {
           var myEdge = incIter.next()
           System.out.println("Incident edge number: "+ myEdge+" Weight is " + edgeWeights(myEdge) +" Source is "+g.getEndpoints(myEdge).getFirst+" Target is "+ g.getEndpoints(myEdge).getSecond)
+          System.out.println("The opposite vertex of"+myN+" in edge"+ myEdge+" is  "+ g.getOpposite(myN,myEdge))
         }
       }   
     }
@@ -352,17 +353,17 @@ object EthicalCoherence extends SimpleSwingApplication {
     
     def activationCompute() {
       
-      var maxChange = 1.0
+      var maxChange = 0.0
       var count =0;
       var V = g.getVertices
       var itr = V.iterator()
       var activationsatT = activations.clone()
-      while ((maxChange > CTHRESHOLD) && (count < MAXITERATION)) {
+      while (/*(maxChange > CTHRESHOLD) &&*/ (count < MAXITERATION)) {
         while (itr.hasNext()) {
           var myNode=itr.next()
           var newA = update(myNode,activationsatT)
           var diffA = Math.abs(newA-activations(myNode))
-          if (diffA < maxChange) maxChange = diffA 
+          if (diffA > maxChange) maxChange = diffA 
           activations(myNode)=newA       
         }
         itr=V.iterator()
@@ -386,6 +387,8 @@ object EthicalCoherence extends SimpleSwingApplication {
       if (netFlow > 0) {
         nActivation=(cActivation*(1.0-DECAYRATE))+(netFlow*(MAX-cActivation))
         nActivation=Math.max(-1.0,Math.min(1.0, nActivation))
+        var mys = "LS"
+        if (str.compareTo(mys)==0) System.out.println("LS netwflow is "+netFlow+"and net activation is "+nActivation)
       }
       else {
         nActivation=(cActivation*(1.0-DECAYRATE))+(netFlow*(cActivation-MIN))
